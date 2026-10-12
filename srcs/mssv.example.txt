@@ -1,0 +1,4 @@
+# Sao chép thành mssv.txt và điền MSSV các thành viên nhóm (mỗi MSSV 1 dòng hoặc cách nhau bởi dấu phẩy/khoảng trắng).
+# THỨ TỰ phải giống nhau ở mọi client của nhóm (vì K0 = SHA256(MSSV_1 || MSSV_2 || ...)).
+2411508
+2312075
