@@ -1,23 +1,20 @@
 # BTL1 – 1.1: Chat & truyền tệp mã hóa đầu cuối (E2EE)
 
-Môn **CO3069 – Mật mã và An ninh mạng** (ĐH Bách Khoa TP.HCM).
-Ứng dụng Client–Server (Python 3.10+) kết hợp:
-
-| Thành phần | Thuật toán | Vai trò |
-|---|---|---|
-| Trao đổi khóa phiên | **Diffie-Hellman** nhóm MODP-2048 (RFC 3526 #14), khóa tạm thời | Tạo bí mật chung Z, có *forward secrecy* |
-| Xác thực danh tính | **RSA-3072 + PSS (SHA-256)** ký toàn bộ transcript | Chống Man-in-the-Middle |
-| Dẫn xuất khóa | **HKDF-SHA256**, salt = **K0 = SHA256(MSSV₁ ‖ MSSV₂ ‖ …)** | Khóa AES theo từng hướng, khóa xác nhận |
-| Xác nhận khóa | **HMAC-SHA256** (Finished) | Hai bên chứng minh cùng khóa/cùng nhóm MSSV |
-| Mã hóa dữ liệu | **AES-256-GCM** + số thứ tự | Bí mật + toàn vẹn + chống replay |
-| Truyền tệp | Chia khối 32 KiB, đều qua AES-GCM + SHA-256 toàn tệp | E2EE cho tệp |
+| Thành phần          | Thuật toán                                                      | Vai trò                                     |
+| ------------------- | --------------------------------------------------------------- | ------------------------------------------- |
+| Trao đổi khóa phiên | **Diffie-Hellman** nhóm MODP-2048 (RFC 3526 #14), khóa tạm thời | Tạo bí mật chung Z, có _forward secrecy_    |
+| Xác thực danh tính  | **RSA-3072 + PSS (SHA-256)** ký toàn bộ transcript              | Chống Man-in-the-Middle                     |
+| Dẫn xuất khóa       | **HKDF-SHA256**, salt = **K0 = SHA256(MSSV₁ ‖ MSSV₂ ‖ …)**      | Khóa AES theo từng hướng, khóa xác nhận     |
+| Xác nhận khóa       | **HMAC-SHA256** (Finished)                                      | Hai bên chứng minh cùng khóa/cùng nhóm MSSV |
+| Mã hóa dữ liệu      | **AES-256-GCM** + số thứ tự                                     | Bí mật + toàn vẹn + chống replay            |
+| Truyền tệp          | Chia khối 32 KiB, đều qua AES-GCM + SHA-256 toàn tệp            | E2EE cho tệp                                |
 
 Server chỉ là **relay không tin cậy**: không có khóa nào, chỉ thấy bản mã.
 
 ## Yêu cầu MSSV của đề bài đã được đáp ứng ở đâu
 
-* `Hello, We are [MSSV_1], [MSSV_2]` → bắt buộc có trong HS1/HS2 (được ký) **và** là thông điệp mã hóa đầu tiên của mỗi phía; đối tác từ chối nếu chuỗi khác (`secure_chat/config.py`, `handshake.py`, `client.py`).
-* `Key = SHA256(MSSV_1 || MSSV_2 ..)` → `GroupConfig.initial_key` (K0), dùng làm *salt* HKDF khi sinh khóa phiên. Hai client khai báo MSSV khác nhau sẽ **không bắt tay được**.
+- `Hello, We are [MSSV_1], [MSSV_2]` → bắt buộc có trong HS1/HS2 (được ký) **và** là thông điệp mã hóa đầu tiên của mỗi phía; đối tác từ chối nếu chuỗi khác (`secure_chat/config.py`, `handshake.py`, `client.py`).
+- `Key = SHA256(MSSV_1 || MSSV_2 ..)` → `GroupConfig.initial_key` (K0), dùng làm _salt_ HKDF khi sinh khóa phiên. Hai client khai báo MSSV khác nhau sẽ **không bắt tay được**.
 
 ## Cài đặt & Chạy chương trình
 
@@ -58,6 +55,7 @@ Tệp nhận được lưu ở `data/downloads/<user>/<người_gửi>/`.
 Lệnh: `/users /connect /use /send /sessions /fingerprint /trust /help /quit`.
 
 ### Chạy trên 2 máy khác nhau
+
 1. Máy server: `python -m secure_chat.server --host 0.0.0.0 --port 5000`.
 2. Mỗi máy client chạy client 1 lần để sinh khóa (`data/identities/<user>.pub`), rồi **trao đổi file `.pub` và đối chiếu vân tay qua kênh khác** (gặp trực tiếp/điện thoại).
 3. Đặt file `.pub` của đối tác vào `data/trusted/<đối_tác>.pub` (hoặc lệnh `/trust <user> <file.pub>`).
@@ -92,6 +90,7 @@ e2e_chat/
 ```
 
 ## Gợi ý kịch bản demo khi bảo vệ
+
 1. Chạy server với `-v`, mở 2 client, `/connect` → chỉ ra vân tay, `session_id` hai bên **trùng nhau**.
 2. Gửi tin + tệp; chỉ màn hình server: chỉ thấy bản mã base64.
 3. (Tùy chọn) Wireshark trên loopback, cổng 5000: tìm chuỗi `Hello, We are` chỉ xuất hiện trong gói bắt tay, mọi nội dung chat/tệp không đọc được.
@@ -99,6 +98,7 @@ e2e_chat/
 5. Chạy client thứ 3 với MSSV khác → bắt tay thất bại (K0 khác).
 
 ## Lưu ý
-* Đây là sản phẩm học tập, chưa qua kiểm toán độc lập; không dùng cho dữ liệu thực.
-* Mỗi nhóm nhớ đổi `--mssv` sang MSSV thật của nhóm (ví dụ trong repo chỉ là giả định).
-* Mục 1.2 (CA / X.509) có thể thay bước *pinning* bằng kiểm tra chứng thư: điểm nối là `TrustStore.verify_peer()` trong `identity.py`.
+
+- Đây là sản phẩm học tập, chưa qua kiểm toán độc lập; không dùng cho dữ liệu thực.
+- Mỗi nhóm nhớ đổi `--mssv` sang MSSV thật của nhóm (ví dụ trong repo chỉ là giả định).
+- Mục 1.2 (CA / X.509) có thể thay bước _pinning_ bằng kiểm tra chứng thư: điểm nối là `TrustStore.verify_peer()` trong `identity.py`.
